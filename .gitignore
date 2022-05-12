@@ -1,0 +1,20 @@
+### Example user template template
+### Example user template
+
+# IntelliJ project files
+.idea
+devops
+*.iml
+out
+gen
+.gitignore
+target
+*.class
+*.log
+!/.gitignore
+null
+logs
+
+/credit-app/devops/
+/app.pid
+/app.port
