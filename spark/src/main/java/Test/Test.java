@@ -5,40 +5,71 @@
  */
 package Test;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.spark.Partitioner;
 import org.apache.spark.SparkConf;
-import org.apache.spark.streaming.Durations;
-import org.apache.spark.streaming.api.java.JavaPairDStream;
-import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
-import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.*;
 import scala.Tuple2;
+import scala.Tuple3;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.*;
+import org.apache.commons.lang.StringUtils;
 
 public class Test {
-    /**
-     * 使用Java语言开发sparkstreaming完成WordCount
-     */
-    public static void main(String[] args) throws InterruptedException {
-        //0.TODO 准备环境
-        SparkConf sparkConf = new SparkConf().setAppName("JavaSparkDemo").setMaster("local[*]");
-//        JavaSparkContext jsc = new JavaSparkContext(sparkConf);
-//        jsc.setLogLevel("WARN");
+    //创建sparkconf 和JavaSparkContext
+    public static  SparkConf conf = new SparkConf().setMaster("local").setAppName("test");
+    public static JavaSparkContext sc = new JavaSparkContext(conf);
 
-        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, Durations.seconds(5));
-        //1.TODO 加载数据
-        JavaReceiverInputDStream<String> lines = jssc.socketTextStream("node1", 9999);
-        //2.TODO 处理数据-WordCount
-        JavaPairDStream<String, Integer> result = lines.flatMap(line -> Arrays.asList(line.split(",", -1)).iterator())
-                .mapToPair(word -> new Tuple2<>(word, 1))
-                .reduceByKey((a, b) -> a + b);
-        //3.TODO 输出结果
-        result.print();
-        //4.TODO 启动并等待停止
-        jssc.start();
-        jssc.awaitTermination();
+    public static void main(String[] args) {
 
-        //nc -lk 999
+        aggregateByKey();
+
     }
 
+    /**
+     * 实现单词计数
+     */
+    public static void aggregateByKey(){
+        String input = "/Users/xuejiameng/java_big_data/spark/data/";
+        JavaRDD<String> unionrdd = sc.emptyRDD();
+        JavaPairRDD<String, String> wordFileNameRDD = null;
+        int num =0;
+            while (num<=2){
+                String file_name = input+num; //文件名称
+                JavaRDD<String> rdd1 = sc.textFile(file_name);
+                int fileName = num;
+                //4.将遍历的多个rdd拼接成1个Rdd
+                unionrdd=unionrdd.union(rdd1);;
+               wordFileNameRDD=
+                        unionrdd.flatMap(lines -> Arrays.asList(lines.split(" ")).iterator()).mapToPair(word -> new Tuple2<>(word,String.valueOf(fileName)));
+                num++;
+            }
+
+        JavaPairRDD<Tuple2<String, String>, Integer> wordFileNameCountPerPairs = wordFileNameRDD.mapToPair(wordFileNamePair -> new Tuple2<>(wordFileNamePair, 1))
+                .reduceByKey(Integer::sum);
+        JavaPairRDD<String, Tuple2<String, Integer>> wordCountPerFileNamePairs = wordFileNameCountPerPairs.mapToPair(wordFileNameCountPerPair -> new Tuple2<>(wordFileNameCountPerPair._1._1, new Tuple2<>(wordFileNameCountPerPair._1._2, wordFileNameCountPerPair._2)));
+        JavaPairRDD<String, String> result = wordCountPerFileNamePairs.groupByKey().mapToPair(wordCountPerFileNamePairIterator -> new Tuple2<>(wordCountPerFileNamePairIterator._1, StringUtils.join(wordCountPerFileNamePairIterator._2.iterator(), ','))).sortByKey();
+        for(Tuple2<String, String> pair : result.collect()) {
+            System.out.printf("\"%s\", {%s}%n", pair._1, pair._2);
+        }
+
+
+    }
+
+
+
 }
+
+
 
