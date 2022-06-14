@@ -57,7 +57,7 @@ public class TransformationOperator {
     public static void main(String[] args) {
         //map();
         //filter();
-        //flatMap();
+       // flatMap();
         //groupBykey();
         //reduceBykey();
       // sortBykey();
@@ -84,20 +84,19 @@ public class TransformationOperator {
         final JavaRDD<String> rdd = sc.parallelize(list);
 
 
-        System.out.println("\nLambda表达式实现：");
+        System.out.println("Lambda表达式实现：");
         rdd.map(name -> "Hello " + name).foreach(s -> println(s));
     }
 
 
     public static void flatMap() {
-        final List<String> list = Arrays.asList("张无忌 赵敏", "宋青书 周芷若");
+        final List<String> list = Arrays.asList("BANNA APPLE", "MElON ORANGE");
         final JavaRDD<String> rdd = sc.parallelize(list);
 
-        System.out.println("\nLambda表达式实现：");
+        System.out.println("Lambda表达式实现：");
         rdd.flatMap(names -> Arrays.asList(names.split(" ")).iterator())
                 .map(name -> "Hello " + name)
                 .foreach(name -> println(name));
-
     }
 
     /**

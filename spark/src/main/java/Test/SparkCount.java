@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.stream.*;
 import org.apache.commons.lang.StringUtils;
 
-public class Test {
+public class SparkCount {
     //创建sparkconf 和JavaSparkContext
     public static  SparkConf conf = new SparkConf().setMaster("local").setAppName("test");
     public static JavaSparkContext sc = new JavaSparkContext(conf);
@@ -60,6 +60,8 @@ public class Test {
                 .reduceByKey(Integer::sum);
         JavaPairRDD<String, Tuple2<String, Integer>> wordCountPerFileNamePairs = wordFileNameCountPerPairs.mapToPair(wordFileNameCountPerPair -> new Tuple2<>(wordFileNameCountPerPair._1._1, new Tuple2<>(wordFileNameCountPerPair._1._2, wordFileNameCountPerPair._2)));
         JavaPairRDD<String, String> result = wordCountPerFileNamePairs.groupByKey().mapToPair(wordCountPerFileNamePairIterator -> new Tuple2<>(wordCountPerFileNamePairIterator._1, StringUtils.join(wordCountPerFileNamePairIterator._2.iterator(), ','))).sortByKey();
+
+
         for(Tuple2<String, String> pair : result.collect()) {
             System.out.printf("\"%s\", {%s}%n", pair._1, pair._2);
         }
