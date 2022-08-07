@@ -27,6 +27,8 @@ public class SparkSQLTest3 {
         conf.setAppName("testJob");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
+
+
         SparkSession spark = SparkSession
                 .builder()
                 .appName("SparkSQLTest3")
